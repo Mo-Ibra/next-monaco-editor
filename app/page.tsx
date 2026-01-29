@@ -4,6 +4,8 @@ import { useState } from "react";
 import CodeEditor from "@/components/CodeEditor";
 import OutputWindow from "@/components/OutputWindow";
 import LanguageSelector from "@/components/LanguageSelector";
+import { executePiston } from "@/lib/api";
+import { runJavaScript } from "@/lib/funcs";
 
 const CODE_SNIPPETS: Record<string, string> = {
   javascript: `// Welcome to Monaco Editor!
@@ -87,68 +89,17 @@ export default function Home() {
     setIsLoading(true);
 
     if (language === "javascript") {
-      runJavaScript();
+      const logs = runJavaScript(code);
+      setOutput(logs);
     } else if (language === "html") {
       setHtmlContent(code);
     } else {
-      await runPiston(language);
+      const version = LANGUAGE_VERSIONS[language] || "*";
+      const logs = await executePiston(language, version, code);
+      setOutput(logs);
     }
 
     setIsLoading(false);
-  };
-
-  const runJavaScript = () => {
-    const logs: string[] = [];
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    console.log = (...args) => logs.push(args.map(arg => String(arg)).join(" "));
-    console.error = (...args) => logs.push(`Error: ${args.map(arg => String(arg)).join(" ")}`);
-    console.warn = (...args) => logs.push(`Warning: ${args.map(arg => String(arg)).join(" ")}`);
-
-    try {
-      // eslint-disable-next-line no-new-func
-      const func = new Function(code);
-      func();
-    } catch (error: Error | any) {
-      logs.push(`Error: ${error.message}`);
-    } finally {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-      setOutput([...logs]);
-    }
-  };
-
-  const runPiston = async (lang: string) => {
-    try {
-      const version = LANGUAGE_VERSIONS[lang] || "*";
-      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          language: lang,
-          version: version,
-          files: [{ content: code }],
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.run) {
-        const logs = [];
-        if (result.run.stdout) logs.push(result.run.stdout);
-        if (result.run.stderr) logs.push(`Error: ${result.run.stderr}`);
-        if (logs.length === 0 && result.message) logs.push(result.message);
-
-        setOutput(logs);
-      } else {
-        setOutput(["Error: Failed to execute code."]);
-      }
-    } catch (error) {
-      setOutput([`Error: ${error}`]);
-    }
   };
 
   return (
