@@ -43,9 +43,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-8 flex justify-center items-center bg-gray-900">
-
-      <main className="max-w-6xl mx-auto flex flex-col gap-6">
-
+      <main className="w-full max-w-6xl mx-auto flex flex-col gap-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <p className="text-gray-600 dark:text-gray-400">
