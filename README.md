@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js Monaco Editor
 
-## Getting Started
+A powerful local and remote code execution platform built with Next.js and Monaco Editor.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Multi-language Support**: Write and run code in multiple languages.
+  - **JavaScript**: Local execution with captured console logs.
+  - **Java, C#, C++**: Remote execution via the [Piston API](https://github.com/engineer-man/piston).
+  - **HTML**: Live secure preview with interactive elements.
+- **Monaco Editor Integration**: Pro-grade code editing experience with syntax highlighting and smart features.
+- **Real-time Output**: Instant feedback for console logs and compilation errors.
+- **Clean Architecture**: Refactored for maintainability with separated concerns.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: [Next.js (App Router)](https://nextjs.org/)
+- **Editor**: [@monaco-editor/react](https://github.com/suren-atoyan/monaco-react)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **API**: [Piston](https://emkc.org/api/v2/piston) for remote code execution.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Project Structure
 
-## Learn More
+- `app/page.tsx`: Main application entry point and state management.
+- `components/`: Reusable UI components.
+  - `CodeEditor.tsx`: Wrapper for the Monaco Editor.
+  - `LanguageSelector.tsx`: Dropdown for selecting languages and versions.
+  - `OutputWindow.tsx`: Displays text output or HTML preview.
+- `lib/`: Utility functions and shared logic.
+  - `api.ts`: Logic for remote execution (Piston API).
+  - `funcs.ts`: Logic for local execution (JavaScript).
+  - `constants.ts`: Centralized configuration for languages and code snippets.
 
-To learn more about Next.js, take a look at the following resources:
+## 🚦 Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Node.js 18+
+- npm / yarn / pnpm
 
-## Deploy on Vercel
+### Installation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Mo-Ibra/next-monaco-editor.git
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🔒 Security
+
+- **HTML Preview**: Runs in an `iframe` with `sandbox="allow-scripts"`. This prevents the executed code from accessing your local storage, cookies, or main document.
+- **JavaScript**: Runs via `new Function()`, which is isolated to the client's browser.
+
+## 📄 License
+
+MIT
