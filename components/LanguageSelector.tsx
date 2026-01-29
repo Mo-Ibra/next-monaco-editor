@@ -2,18 +2,12 @@
 
 import React from "react";
 
+import { LANGUAGE_VERSIONS } from "@/lib/constants";
+
 interface LanguageSelectorProps {
   language: string;
   onSelect: (language: string) => void;
 }
-
-const LANGUAGE_VERSIONS: Record<string, string> = {
-  javascript: "18.15.0",
-  java: "15.0.2",
-  csharp: "6.12.0",
-  cpp: "10.2.0",
-  html: "5",
-};
 
 const languages = Object.entries(LANGUAGE_VERSIONS);
 
