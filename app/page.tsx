@@ -1,63 +1,199 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import CodeEditor from "@/components/CodeEditor";
+import OutputWindow from "@/components/OutputWindow";
+import LanguageSelector from "@/components/LanguageSelector";
+
+const CODE_SNIPPETS: Record<string, string> = {
+  javascript: `// Welcome to Monaco Editor!
+
+console.log("Hello from Next.js!");
+const sum = (a, b) => a + b;
+console.log("Sum 5 + 3 =", sum(5, 3));`,
+  java: `public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello from Java!");
+        
+        int a = 5;
+        int b = 3;
+        System.out.println("Sum 5 + 3 = " + (a + b));
+    }
+}`,
+  csharp: `using System;
+
+public class Program {
+    public static void Main() {
+        Console.WriteLine("Hello from C#!");
+        
+        int a = 5;
+        int b = 3;
+        Console.WriteLine($"Sum 5 + 3 = {a + b}");
+    }
+}`,
+  cpp: `#include <iostream>
+
+int main() {
+    std::cout << "Hello from C++!" << std::endl;
+    
+    int a = 5;
+    int b = 3;
+    std::cout << "Sum 5 + 3 = " << (a + b) << std::endl;
+    
+    return 0;
+}`,
+  html: `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        h1 { color: #3b82f6; }
+        button { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Hello from HTML!</h1>
+    <p>This is a live preview of your code.</p>
+    <button onclick="alert('Clicked!')">Click Me</button>
+</body>
+</html>`,
+};
+
+const LANGUAGE_VERSIONS: Record<string, string> = {
+  javascript: "18.15.0",
+  java: "15.0.2",
+  csharp: "6.12.0",
+  cpp: "10.2.0",
+  html: "5",
+};
 
 export default function Home() {
+  const [language, setLanguage] = useState<string>("javascript");
+  const [code, setCode] = useState<string>(CODE_SNIPPETS["javascript"]);
+  const [output, setOutput] = useState<string[]>([]);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLanguageChange = (selectedLanguage: string) => {
+    setLanguage(selectedLanguage);
+    setCode(CODE_SNIPPETS[selectedLanguage] || "");
+    setOutput([]);
+    setHtmlContent(null);
+  };
+
+  const runCode = async () => {
+    setOutput([]);
+    setHtmlContent(null);
+    setIsLoading(true);
+
+    if (language === "javascript") {
+      runJavaScript();
+    } else if (language === "html") {
+      setHtmlContent(code);
+    } else {
+      await runPiston(language);
+    }
+
+    setIsLoading(false);
+  };
+
+  const runJavaScript = () => {
+    const logs: string[] = [];
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    console.log = (...args) => logs.push(args.map(arg => String(arg)).join(" "));
+    console.error = (...args) => logs.push(`Error: ${args.map(arg => String(arg)).join(" ")}`);
+    console.warn = (...args) => logs.push(`Warning: ${args.map(arg => String(arg)).join(" ")}`);
+
+    try {
+      // eslint-disable-next-line no-new-func
+      const func = new Function(code);
+      func();
+    } catch (error: Error | any) {
+      logs.push(`Error: ${error.message}`);
+    } finally {
+      console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
+      setOutput([...logs]);
+    }
+  };
+
+  const runPiston = async (lang: string) => {
+    try {
+      const version = LANGUAGE_VERSIONS[lang] || "*";
+      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          language: lang,
+          version: version,
+          files: [{ content: code }],
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.run) {
+        const logs = [];
+        if (result.run.stdout) logs.push(result.run.stdout);
+        if (result.run.stderr) logs.push(`Error: ${result.run.stderr}`);
+        if (logs.length === 0 && result.message) logs.push(result.message);
+
+        setOutput(logs);
+      } else {
+        setOutput(["Error: Failed to execute code."]);
+      }
+    } catch (error) {
+      setOutput([`Error: ${error}`]);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen p-8 font-(family-name:--font-geist-sans) bg-gray-50 dark:bg-gray-900">
+      <main className="max-w-6xl mx-auto flex flex-col gap-6">
+        <div className="flex justify-between items-center flex-wrap gap-4">
+          <div>
+            <p className="text-gray-600 dark:text-gray-400">
+              Run Code in the browser
+            </p>
+          </div>
+
+          <div className="flex gap-4 items-center">
+            <LanguageSelector language={language} onSelect={handleLanguageChange} />
+            <button
+              onClick={runCode}
+              disabled={isLoading}
+              className={`px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm flex items-center gap-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              {isLoading ? 'Running...' : 'Run Code'}
+              {!isLoading && (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[70vh]">
+          <div className="h-full">
+            <CodeEditor
+              language={language === 'csharp' ? 'csharp' : language === 'cpp' ? 'cpp' : language}
+              value={code}
+              onChange={(newCode) => setCode(newCode || "")}
+              height="100%"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+          <div className="h-full">
+            <OutputWindow output={output} htmlContent={htmlContent} />
+          </div>
+        </div>
+
+        <div className="text-center text-sm text-gray-500">
+          Built with Next.js 16 and @monaco-editor/react
         </div>
       </main>
     </div>
